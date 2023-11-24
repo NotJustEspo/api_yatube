@@ -26,59 +26,36 @@ class PostsViewSet(viewsets.ModelViewSet):
         super(PostsViewSet, self).perform_destroy(instance)
 
 
-# class CommentViewSet(viewsets.ModelViewSet):
-#     serializer_class = CommentSerializer
-
-#     def get_queryset(self):
-#         post_id = self.kwsrgs.get('post_id')
-#         new_queryset = Comment.objects.filter(post=post_id)
-#         return new_queryset
+class GroupViewSet(viewsets.ModelViewSet):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
 
 
-# @api_view(['GET'])
-# def api_group(request):
-#     groups = Group.objects.all()
-#     serializer = GroupSerializer(groups, many=True)
-#     return Response(serializer.data)
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def get_queryset(self):
+        post_id = self.kwargs.get('post_id')
+        post = Post.objects.get(pk=post_id)
+        new_queryset = post.comments.all()
+        return new_queryset
 
-# @api_view(['GET'])
-# def api_group_detail(request, group_id):
-#     group = get_object_or_404(Group, id=group_id)
-#     serializer = GroupSerializer(group)
-#     return Response(serializer.data)
+    def perform_create(self, serializer):
+        post_id = self.kwargs.get('post_id')
+        post = Post.objects.get(pk=post_id)
+        serializer.save(author=self.request.user, post=post)
 
+    def perform_update(self, serializer):
+        post_id = self.kwargs.get('post_id')
+        post = Post.objects.get(pk=post_id)
+        if serializer.instance.author == self.request.user and post == post:
+            super(CommentViewSet, self).perform_update(serializer)
+        return PermissionError('Изменение чужого комментария запрещено!')
 
-# @api_view(['GET', 'POST'])
-# def api_posts(request):
-#     if request.method == 'POST':
-#         serializer = PostSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save(author=request.user)
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     posts = Post.objects.all()
-#     serializer = PostSerializer(posts, many=True)
-#     return Response(serializer.data)
-
-
-# @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
-# def api_posts_detail(request, post_id):
-#     post = get_object_or_404(Post, id=post_id)
-#     if request.method == 'GET':
-#         serializer = PostSerializer(post)
-#         return Response(serializer.data)
-#     user = request.user
-#     if user != post.author:
-#         return Response(status=status.HTTP_403_FORBIDDEN)
-#     if request.method == 'PUT' or request.method == 'PATCH':
-#         serializer = PostSerializer(post, data=request.data, partial=True)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     elif request.method == 'DELETE':
-#         post.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
+    def perform_destroy(self, instance):
+        post_id = self.kwargs.get('post_id')
+        post = Post.objects.get(pk=post_id)
+        if instance.author == self.request.user and post == post:
+            super(CommentViewSet, self).perform_destroy(instance)
+        return PermissionError('Удаление чужого комментария запрещено!')
