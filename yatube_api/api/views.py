@@ -10,19 +10,19 @@ from .serializers import PostSerializer, GroupSerializer, CommentSerializer
 class PostsViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
     def perform_update(self, serializer):
         if serializer.instance.author != self.request.user:
-            raise PermissionError('Изменение чужого контента запрещено!')
+            raise Response(status=status.HTTP_403_FORBIDDEN)
         super(PostsViewSet, self).perform_update(serializer)
 
     def perform_destroy(self, instance):
         if instance.author != self.request.user:
-            raise PermissionError('Удаление чужого контента запрещено!')
+            raise Response(status=status.HTTP_403_FORBIDDEN)
         super(PostsViewSet, self).perform_destroy(instance)
 
 
@@ -33,13 +33,13 @@ class GroupViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         post_id = self.kwargs.get('post_id')
         post = Post.objects.get(pk=post_id)
-        new_queryset = post.comments.all()
-        return new_queryset
+        queryset = post.comments.all()
+        return queryset
 
     def perform_create(self, serializer):
         post_id = self.kwargs.get('post_id')
@@ -51,11 +51,11 @@ class CommentViewSet(viewsets.ModelViewSet):
         post = Post.objects.get(pk=post_id)
         if serializer.instance.author == self.request.user and post == post:
             super(CommentViewSet, self).perform_update(serializer)
-        return PermissionError('Изменение чужого комментария запрещено!')
+        raise Response(status=status.HTTP_403_FORBIDDEN)
 
     def perform_destroy(self, instance):
         post_id = self.kwargs.get('post_id')
         post = Post.objects.get(pk=post_id)
         if instance.author == self.request.user and post == post:
             super(CommentViewSet, self).perform_destroy(instance)
-        return PermissionError('Удаление чужого комментария запрещено!')
+        raise Response(status=status.HTTP_403_FORBIDDEN)
