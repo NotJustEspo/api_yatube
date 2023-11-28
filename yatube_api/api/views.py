@@ -51,11 +51,17 @@ class PostsViewSet(viewsets.ModelViewSet):
 
 
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Класс для работы с группами.
+    """
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
 
 
-class CommentViewSet(viewsets.ModelViewSet):
+class CommentsViewSet(viewsets.ModelViewSet):
+    """
+    Класс для работы с комментами.
+    """
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated, IsAuthorPermission]
 
@@ -66,26 +72,35 @@ class CommentViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        """
+        Переопределение метода создания комментов.
+        """
         post_id = self.kwargs.get('post_id')
         post = Post.objects.get(pk=post_id)
         serializer.save(author=self.request.user, post=post)
 
     def perform_update(self, serializer):
+        """
+        Переопределение метода обновления коммента.
+        """
         post_id = self.kwargs.get('post_id')
         post = Post.objects.get(pk=post_id)
         try:
             serializer.instance.author = self.request.user
             post = post
-            super(CommentViewSet, self).perform_update(serializer)
+            super(CommentsViewSet, self).perform_update(serializer)
         except PermissionError:
             raise Response(status=status.HTTP_403_FORBIDDEN)
 
     def perform_destroy(self, instance):
+        """
+        Переопределение метода удаления коммента.
+        """
         post_id = self.kwargs.get('post_id')
         post = Post.objects.get(pk=post_id)
         try:
             instance.author = self.request.user
             post = post
-            super(CommentViewSet, self).perform_destroy(instance)
+            super(CommentsViewSet, self).perform_destroy(instance)
         except PermissionError:
             raise Response(status=status.HTTP_403_FORBIDDEN)
