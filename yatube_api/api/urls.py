@@ -15,7 +15,6 @@ router.register(
     basename='comments'
 )
 
-
 urlpatterns = [
     path('', include(router.urls), name='api-root'),
     path('api/v1/api-token-auth/', views.obtain_auth_token),

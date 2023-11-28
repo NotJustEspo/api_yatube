@@ -1,14 +1,14 @@
-from django.shortcuts import get_object_or_404, render
-from rest_framework.decorators import api_view
+from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
-from rest_framework import permissions
-from rest_framework import status, viewsets
-from posts.models import Post, Group, Comment
-from .serializers import PostSerializer, GroupSerializer, CommentSerializer
+
+from posts.models import Post, Group
+from .serializers import CommentSerializer, PostSerializer, GroupSerializer
 
 
-class IsAuthor(permissions.BasePermission):
-
+class IsAuthorPermission(permissions.BasePermission):
+    """
+    Пользовательское разрешение.
+    """
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -16,14 +16,23 @@ class IsAuthor(permissions.BasePermission):
 
 
 class PostsViewSet(viewsets.ModelViewSet):
+    """
+    Класс для работы с постами.
+    """
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAuthor]
+    permission_classes = [permissions.IsAuthenticated, IsAuthorPermission]
 
     def perform_create(self, serializer):
+        """
+        Переопределение метода при создании поста.
+        """
         serializer.save(author=self.request.user)
 
     def perform_update(self, serializer):
+        """
+        Переопределение метода для обновления поста.
+        """
         try:
             serializer.instance.author = self.request.user
             super(PostsViewSet, self).perform_update(serializer)
@@ -31,6 +40,9 @@ class PostsViewSet(viewsets.ModelViewSet):
             raise Response(status=status.HTTP_403_FORBIDDEN)
 
     def perform_destroy(self, instance):
+        """
+        Переопределение метода для удаления поста.
+        """
         try:
             instance.author = self.request.user
             super(PostsViewSet, self).perform_destroy(instance)
@@ -45,7 +57,7 @@ class GroupViewSet(viewsets.ReadOnlyModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAuthor]
+    permission_classes = [permissions.IsAuthenticated, IsAuthorPermission]
 
     def get_queryset(self):
         post_id = self.kwargs.get('post_id')
