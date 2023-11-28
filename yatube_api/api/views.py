@@ -35,7 +35,7 @@ class PostsViewSet(viewsets.ModelViewSet):
         """
         try:
             serializer.instance.author = self.request.user
-            super(PostsViewSet, self).perform_update(serializer)
+            super().perform_update(serializer)
         except PermissionError:
             raise Response(status=status.HTTP_403_FORBIDDEN)
 
@@ -45,7 +45,7 @@ class PostsViewSet(viewsets.ModelViewSet):
         """
         try:
             instance.author = self.request.user
-            super(PostsViewSet, self).perform_destroy(instance)
+            super().perform_destroy(instance)
         except PermissionError:
             raise Response(status=status.HTTP_403_FORBIDDEN)
 
@@ -88,7 +88,7 @@ class CommentsViewSet(viewsets.ModelViewSet):
         try:
             serializer.instance.author = self.request.user
             post = post
-            super(CommentsViewSet, self).perform_update(serializer)
+            super().perform_update(serializer)
         except PermissionError:
             raise Response(status=status.HTTP_403_FORBIDDEN)
 
@@ -101,6 +101,6 @@ class CommentsViewSet(viewsets.ModelViewSet):
         try:
             instance.author = self.request.user
             post = post
-            super(CommentsViewSet, self).perform_destroy(instance)
+            super().perform_destroy(instance)
         except PermissionError:
             raise Response(status=status.HTTP_403_FORBIDDEN)
