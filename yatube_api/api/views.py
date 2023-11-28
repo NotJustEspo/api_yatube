@@ -7,33 +7,45 @@ from posts.models import Post, Group, Comment
 from .serializers import PostSerializer, GroupSerializer, CommentSerializer
 
 
+class IsAuthor(permissions.BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return obj.author == request.user
+
+
 class PostsViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAuthor]
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
     def perform_update(self, serializer):
-        if serializer.instance.author != self.request.user:
+        try:
+            serializer.instance.author = self.request.user
+            super(PostsViewSet, self).perform_update(serializer)
+        except PermissionError:
             raise Response(status=status.HTTP_403_FORBIDDEN)
-        super(PostsViewSet, self).perform_update(serializer)
 
     def perform_destroy(self, instance):
-        if instance.author != self.request.user:
+        try:
+            instance.author = self.request.user
+            super(PostsViewSet, self).perform_destroy(instance)
+        except PermissionError:
             raise Response(status=status.HTTP_403_FORBIDDEN)
-        super(PostsViewSet, self).perform_destroy(instance)
 
 
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAuthor]
 
     def get_queryset(self):
         post_id = self.kwargs.get('post_id')
@@ -49,13 +61,19 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         post_id = self.kwargs.get('post_id')
         post = Post.objects.get(pk=post_id)
-        if serializer.instance.author == self.request.user and post == post:
+        try:
+            serializer.instance.author = self.request.user
+            post = post
             super(CommentViewSet, self).perform_update(serializer)
-        raise Response(status=status.HTTP_403_FORBIDDEN)
+        except PermissionError:
+            raise Response(status=status.HTTP_403_FORBIDDEN)
 
     def perform_destroy(self, instance):
         post_id = self.kwargs.get('post_id')
         post = Post.objects.get(pk=post_id)
-        if instance.author == self.request.user and post == post:
+        try:
+            instance.author = self.request.user
+            post = post
             super(CommentViewSet, self).perform_destroy(instance)
-        raise Response(status=status.HTTP_403_FORBIDDEN)
+        except PermissionError:
+            raise Response(status=status.HTTP_403_FORBIDDEN)
