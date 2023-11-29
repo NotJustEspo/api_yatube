@@ -7,22 +7,22 @@ from api.views import PostsViewSet, GroupViewSet, CommentsViewSet
 
 v1_router = DefaultRouter()
 v1_router.register(
-    r'api/v1/posts',
+    r'posts',
     PostsViewSet,
     basename='posts'
 )
 v1_router.register(
-    r'api/v1/groups',
+    r'groups',
     GroupViewSet,
     basename='groups'
 )
 v1_router.register(
-    r'api/v1/posts/(?P<post_id>\d+)/comments',
+    r'posts/(?P<post_id>\d+)/comments',
     CommentsViewSet,
     basename='comments'
 )
 
 urlpatterns = [
     path('', include(v1_router.urls), name='api-root'),
-    path('api/v1/api-token-auth/', views.obtain_auth_token),
+    path('api-token-auth/', views.obtain_auth_token),
 ]
